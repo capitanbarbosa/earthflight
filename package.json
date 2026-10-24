@@ -1,0 +1,36 @@
+{
+  "name": "earthflight",
+  "version": "0.1.0",
+  "private": true,
+  "description": "EARTHFLIGHT - fly a spaceship from orbit down into 3D cities, in the browser.",
+  "license": "MIT",
+  "scripts": {
+    "copy-cesium": "node scripts/copy-cesium.mjs",
+    "postinstall": "node scripts/copy-cesium.mjs",
+    "dev": "next dev --webpack",
+    "build": "node scripts/copy-cesium.mjs && next build --webpack",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mapbox/vector-tile": "^3.0.0",
+    "cesium": "^1.146.0",
+    "next": "^16.4.3",
+    "pbf": "^5.1.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "three": "^0.186.1",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/three": "^0.186.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.5"
+  }
+}
