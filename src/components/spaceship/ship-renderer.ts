@@ -2,6 +2,10 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { Quat, Vec3 } from "@/engine/math3";
 import { createShipModel, type ShipModel } from "./ship-model";
+import { SatelliteLayer, type SatFrame } from "./satellite-layer";
+import type { Telemetry } from "@/stores/telemetry";
+
+export type SatInput = { frame: Omit<SatFrame, "width" | "height" | "pixelRatio">; tel: Telemetry };
 
 export interface ShipFrame {
   /** Camera pose in ECEF. */
@@ -38,6 +42,7 @@ export class ShipRenderer {
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(60, 1, 0.02, 400);
   private model: ShipModel;
+  private satLayer: SatelliteLayer;
   private sun = new THREE.DirectionalLight(0xfff2e0, 3.2);
   private fill = new THREE.HemisphereLight(0x6fa8ff, 0x0a0c12, 0.5);
   private pmrem: THREE.PMREMGenerator;
@@ -48,6 +53,7 @@ export class ShipRenderer {
   constructor(container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     this.renderer.setClearColor(0x000000, 0);
+    this.renderer.autoClear = false; // we clear explicitly: satellites pass, depth clear, ship pass
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.canvas = this.renderer.domElement;
@@ -59,6 +65,7 @@ export class ShipRenderer {
     this.envTex = this.pmrem.fromScene(env, 0.04).texture;
     env.dispose?.();
     this.model = createShipModel(this.envTex);
+    this.satLayer = new SatelliteLayer(this.envTex);
     this.scene.add(this.model.group, this.sun, this.fill);
     this.scene.add(this.sun.target);
   }
@@ -71,16 +78,27 @@ export class ShipRenderer {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / Math.max(1, h);
     this.camera.updateProjectionMatrix();
+    this.satLayer.resize(w, h);
   }
 
-  render(f: ShipFrame) {
+  private renderSats(sats: SatInput | undefined) {
+    if (!sats) return;
+    const c = this.canvas;
+    this.satLayer.render(
+      this.renderer,
+      { ...sats.frame, width: c.clientWidth, height: c.clientHeight, pixelRatio: this.renderer.getPixelRatio() },
+      sats.tel,
+    );
+  }
+
+  render(f: ShipFrame, sats?: SatInput) {
     if (this.disposed) return;
     const m = this.model;
     m.group.visible = f.visible;
-    if (!f.visible) {
-      this.renderer.clear();
-      return;
-    }
+    this.renderer.clear();
+    this.renderSats(sats);
+    if (!f.visible) return;
+    this.renderer.clearDepth();
     const L = Math.max(f.length, 1e-3);
     // camera: origin, same orientation as Cesium's
     const dir = new THREE.Vector3(f.camDir[0], f.camDir[1], f.camDir[2]);
@@ -110,6 +128,7 @@ export class ShipRenderer {
   dispose() {
     this.disposed = true;
     this.model.dispose();
+    this.satLayer.dispose();
     this.envTex.dispose();
     this.pmrem.dispose();
     this.renderer.dispose();

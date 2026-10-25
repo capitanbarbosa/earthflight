@@ -23,6 +23,7 @@ export const CONTROLS: ControlRow[] = [
   { keys: ["X"], action: "Emergency stop", group: "Systems", detail: "Kills velocity and holds position until you thrust again." },
   { keys: ["T"], action: "Reset position (return to orbit)", group: "Systems" },
   { keys: ["G"], action: "Destinations / search", group: "Systems" },
+  { keys: ["L"], action: "Live globe layers", group: "Systems", detail: "Rain, clouds, aurora, earthquakes, storms, wildfires, aircraft near you and ships, plus a clickable list of events to fly to." },
   { keys: ["Backspace"], action: "Cancel cinematic travel", group: "Systems", detail: "Any thrust key also cancels travel." },
   { keys: ["M"], action: "Mute / unmute", group: "Systems" },
   { keys: ["H"], action: "Show / hide this guide", group: "Systems" },

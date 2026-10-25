@@ -21,11 +21,11 @@ export const QUALITY: Record<"low" | "medium" | "high", QualityPreset> = {
     buildings: { radius: 1800, maxTiles: 6, maxAgl: 2500, shadows: false },
   },
   medium: {
-    dprCap: 1.5, res: 1, sse: 2.2, fxaa: true, msaa: 1, shadows: false, bloom: false, blur: false,
+    dprCap: 2, res: 1, sse: 1.5, fxaa: true, msaa: 1, shadows: false, bloom: false, blur: false,
     buildings: { radius: 3000, maxTiles: 12, maxAgl: 3500, shadows: false },
   },
   high: {
-    dprCap: 2, res: 1, sse: 1.4, fxaa: false, msaa: 4, shadows: true, bloom: true, blur: true,
+    dprCap: 2, res: 1, sse: 1.0, fxaa: false, msaa: 4, shadows: true, bloom: true, blur: true,
     buildings: { radius: 4500, maxTiles: 20, maxAgl: 4500, shadows: true },
   },
 };

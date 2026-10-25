@@ -89,6 +89,14 @@ export async function addImagery(Cesium: CesiumModule, scene: InstanceType<Cesiu
  *   Japan  GSI "seamlessphoto"                  GSI terms of use (CC BY 4.0 compatible, attribution)
  *   France IGN BD ORTHO                         Licence Ouverte 2.0 (attribution)
  */
+/**
+ * Cesium picks the imagery zoom level from the terrain tile's geometric error and the provider's *declared*
+ * tile size. Declaring 128 px for tiles that are really 256 px makes it request one zoom level finer than
+ * usual: 4x the ground pixels (still 256 px real images), so the free aerial sources are used at (close to)
+ * their native resolution instead of being sampled one level coarse.
+ */
+const DETAIL_TILE_PX = 128;
+
 function regionalSpecs(Cesium: CesiumModule) {
   const merc = () => new Cesium.WebMercatorTilingScheme();
   const R = Cesium.Rectangle.fromDegrees;
@@ -101,22 +109,27 @@ function regionalSpecs(Cesium: CesiumModule) {
       provider: new Cesium.UrlTemplateImageryProvider({
         url: "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}",
         tilingScheme: merc(),
+        tileWidth: DETAIL_TILE_PX,
+        tileHeight: DETAIL_TILE_PX,
         maximumLevel: 16,
         rectangle: R(-125.0, 24.4, -66.9, 49.5),
         credit: credit('Imagery: <a href="https://www.usgs.gov/core-science-systems/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS The National Map</a> / USDA NAIP'),
       }),
     },
     {
-      // NAIP via dynamic WMS, ~0.6 m/px, slower but only used when very low
+      // NAIP via dynamic WMS, ~0.6 m/px, slower but only used when low (terrain level 15 ≈ 1 km tiles)
       name: "USDA NAIP",
-      minTerrainLevel: 16,
-      provider: new Cesium.WebMapServiceImageryProvider({
-        url: "https://imagery.nationalmap.gov/arcgis/services/USGSNAIPImagery/ImageServer/WMSServer",
-        layers: "USGSNAIPImagery:NaturalColor",
-        parameters: { format: "image/jpeg", transparent: false, styles: "" },
+      minTerrainLevel: 15,
+      // Plain URL template (WMS GetMap with Web-Mercator bbox) instead of WebMapServiceImageryProvider so the
+      // *declared* tile size (DETAIL_TILE_PX) can differ from the real 256 px request, see below.
+      provider: new Cesium.UrlTemplateImageryProvider({
+        url:
+          "https://imagery.nationalmap.gov/arcgis/services/USGSNAIPImagery/ImageServer/WMSServer" +
+          "?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=USGSNAIPImagery:NaturalColor&STYLES=&FORMAT=image/jpeg" +
+          "&TRANSPARENT=FALSE&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&BBOX={westProjected},{southProjected},{eastProjected},{northProjected}",
         tilingScheme: merc(),
-        tileWidth: 256,
-        tileHeight: 256,
+        tileWidth: DETAIL_TILE_PX,
+        tileHeight: DETAIL_TILE_PX,
         maximumLevel: 19,
         rectangle: R(-125.0, 24.4, -66.9, 49.5),
         credit: credit("Aerial imagery: USDA NAIP / USGS"),
@@ -128,6 +141,8 @@ function regionalSpecs(Cesium: CesiumModule) {
       provider: new Cesium.UrlTemplateImageryProvider({
         url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg",
         tilingScheme: merc(),
+        tileWidth: DETAIL_TILE_PX,
+        tileHeight: DETAIL_TILE_PX,
         maximumLevel: 18,
         rectangle: R(122.9, 24.0, 146.0, 45.6),
         credit: credit('Imagery: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">GSI Japan</a>'),
@@ -139,6 +154,8 @@ function regionalSpecs(Cesium: CesiumModule) {
       provider: new Cesium.UrlTemplateImageryProvider({
         url: "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
         tilingScheme: merc(),
+        tileWidth: DETAIL_TILE_PX,
+        tileHeight: DETAIL_TILE_PX,
         maximumLevel: 19,
         rectangle: R(-4.9, 42.3, 8.3, 51.0),
         credit: credit("Imagery: © IGN (Géoplateforme)"),
@@ -186,7 +203,7 @@ async function createDetailProvider(Cesium: CesiumModule) {
         tileHeight: 256,
         maximumLevel: 14,
         credit: new Cesium.Credit(
-          '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless</a> by <a href="https://eox.at" target="_blank" rel="noopener">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2016) CC BY 4.0',
+          '<a href="https://cloudless.eox.at" target="_blank" rel="noopener">EOxCloudless</a> by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2016 &amp; 2017) CC BY 4.0',
           false,
         ),
       });

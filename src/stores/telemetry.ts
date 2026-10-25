@@ -34,7 +34,20 @@ export interface Telemetry {
   /** Increments whenever the sim wants the HUD to flash a collision/emergency indicator. */
   alertSeq: number;
   alertText: string;
+  /** Orbital-traffic labels for the nearest satellites (screen px), `count` entries valid. */
+  sats: { count: number; total: number; visible: number; updated: string; items: SatLabel[] };
 }
+
+export interface SatLabel {
+  x: number;
+  y: number;
+  name: string;
+  /** distance from the ship in km */
+  km: number;
+  kind: string;
+}
+
+export const SAT_LABEL_MAX = 8;
 
 export const telemetry: Telemetry = {
   speed: 0,
@@ -65,4 +78,11 @@ export const telemetry: Telemetry = {
   sun: { x: 0, y: 0, intensity: 0 },
   alertSeq: 0,
   alertText: "",
+  sats: {
+    count: 0,
+    total: 0,
+    visible: 0,
+    updated: "",
+    items: Array.from({ length: SAT_LABEL_MAX }, () => ({ x: 0, y: 0, name: "", km: 0, kind: "" })),
+  },
 };

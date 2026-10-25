@@ -9,6 +9,7 @@ import { getSimulator } from "@/lib/sim-bridge";
 import { useTelemetry } from "./useTelemetry";
 import { Compass } from "./Compass";
 import { DestinationIndicator } from "./DestinationIndicator";
+import { SatLabels } from "./SatLabels";
 import { ControlsGuide } from "../controls/ControlsGuide";
 
 const modeColor = { space: "#a78bfa", atmosphere: "#22d3ee", city: "#34d399" } as const;
@@ -72,6 +73,9 @@ export function Hud() {
           <button className="hud-btn" onClick={() => sim()?.openPanel("destinations")} title="Destinations (G)">
             Destinations <span className="ml-1 opacity-60">G</span>
           </button>
+          <button className="hud-btn" onClick={() => sim()?.openPanel("layers")} title="Live globe layers (L)">
+            Layers <span className="ml-1 opacity-60">L</span>
+          </button>
           <button className="hud-btn" onClick={() => set({ muted: !muted })} title="Mute (M)">
             {muted ? "Sound off" : "Sound on"}
           </button>
@@ -91,6 +95,7 @@ export function Hud() {
       </svg>
 
       <DestinationIndicator />
+      <SatLabels />
 
       {/* bottom-left: flight data */}
       <div className="absolute bottom-7 left-3 sm:left-4">

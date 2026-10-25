@@ -18,6 +18,8 @@ import {
 } from "@/engine/physics";
 import { Autopilot, type TravelTarget } from "@/engine/travel";
 import { ShipRenderer } from "@/components/spaceship/ship-renderer";
+import { OrbitCatalog } from "@/lib/orbits/catalog";
+import { LiveManager } from "@/lib/live/manager";
 import { InputManager } from "@/lib/input";
 import { AudioEngine } from "@/lib/audio/audio-engine";
 import { nearestPlace } from "@/lib/geospatial/destinations";
@@ -43,10 +45,15 @@ export class Simulator {
   private widget!: InstanceType<CesiumModule["CesiumWidget"]>;
   private scene!: Scene;
   private shipRenderer!: ShipRenderer;
+  /** Real satellites (CelesTrak + SGP4), drawn next to the ship while in space. */
+  private orbits = new OrbitCatalog();
+  private orbitsRequested = false;
+  private lastOrbitMs = 0;
   private input!: InputManager;
   private audio: AudioEngine | null = null;
   private buildings!: BuildingStreamer;
   private markers!: Markers;
+  private live?: LiveManager;
   private bIndex = new BuildingIndex();
   private motionBlur: InstanceType<CesiumModule["PostProcessStage"]> | null = null;
   private resizeObs: ResizeObserver | null = null;
@@ -171,6 +178,7 @@ export class Simulator {
     this.buildings = new BuildingStreamer(C, scene, this.bIndex);
     void this.buildings.init();
     this.markers = new Markers(C, scene);
+    this.live = new LiveManager(C, scene, () => ({ lat: telemetry.lat, lon: telemetry.lon, alt: telemetry.alt }));
     void (async () => {
       try {
         await addImagery(C, scene);
@@ -208,6 +216,7 @@ export class Simulator {
     this.unsub.push(
       st.subscribe((s, p) => {
         if (s.quality !== p.quality || s.effects !== p.effects) this.applyQuality(s.quality);
+        if (s.satellites && !p.satellites) this.loadOrbits();
         if (s.cameraMode !== p.cameraMode && s.phase === "flying") this.rig.setMode(s.cameraMode);
         if (s.muted !== p.muted) this.audio?.setMuted(s.muted);
         if (s.volume !== p.volume) this.audio?.setVolume(s.volume);
@@ -238,6 +247,9 @@ export class Simulator {
       this.ev.onError?.("The 3D renderer hit an error. Try reloading, or lower the graphics quality.");
     });
 
+    // orbital traffic: load in the background; the sim never waits for it and works without it
+    if (getFlightState().satellites) this.loadOrbits();
+
     // dev/QA handle
     if (typeof window !== "undefined") {
       (window as unknown as { __earthflight?: unknown }).__earthflight = this;
@@ -246,6 +258,14 @@ export class Simulator {
 
   private get camera() {
     return this.scene.camera;
+  }
+
+  private loadOrbits() {
+    if (this.orbitsRequested) return;
+    this.orbitsRequested = true;
+    void this.orbits.load().then((ok) => {
+      if (!ok) this.orbitsRequested = false; // allow a retry if the user toggles the layer again
+    });
   }
 
   // ------------------------------------------------------------------------------------------
@@ -279,7 +299,7 @@ export class Simulator {
     this.input.requestLock();
   }
 
-  openPanel(p: "destinations" | "settings" | "none") {
+  openPanel(p: "destinations" | "settings" | "layers" | "none") {
     useFlightStore.getState().set({ panel: p });
     if (p === "none") {
       this.suppressPause = false;
@@ -409,6 +429,7 @@ export class Simulator {
       case "KeyX": this.emergencyStop(); break;
       case "KeyT": this.resetPosition(); break;
       case "KeyG": this.openPanel("destinations"); break;
+      case "KeyL": this.openPanel("layers"); break;
       case "KeyH": set({ showControls: !s.showControls }); break;
       case "KeyM": set({ muted: !s.muted }); break;
       case "Backspace": this.cancelTravel(); break;
@@ -769,21 +790,47 @@ export class Simulator {
       const perp = len(sub(pos, scale(sunDir, proj)));
       daylight = smoothstep(6.28e6, 6.5e6, perp);
     }
-    this.shipRenderer.render({
-      camPos: p.pos,
-      camDir: p.dir,
-      camUp: p.up,
-      fovY: p.fov,
-      shipPos: this.ship.pos,
-      shipQ: this.ship.q,
-      length: this.sample.length,
-      sunDir,
-      daylight,
-      thrust: this.rt.thrustLevel,
-      boost: telemetry.fx.speed,
-      visible: st.phase !== "flying" || st.cameraMode !== "cockpit",
-      time: performance.now() / 1000,
-    });
+    // orbital traffic: only meaningful (and only drawn) once the ship is high above the atmosphere
+    const nowMs = Date.now();
+    this.live?.update(nowMs);
+    const satOpacity = st.satellites && this.orbits.loaded ? smoothstep(60_000, 120_000, this.sample.alt) : 0;
+    if (satOpacity > 0.01) {
+      const dtOrb = Math.min(1, Math.max(0, (nowMs - this.lastOrbitMs) / 1000));
+      this.lastOrbitMs = nowMs;
+      this.orbits.step(nowMs, dtOrb);
+    } else {
+      this.lastOrbitMs = nowMs;
+    }
+    this.shipRenderer.render(
+      {
+        camPos: p.pos,
+        camDir: p.dir,
+        camUp: p.up,
+        fovY: p.fov,
+        shipPos: this.ship.pos,
+        shipQ: this.ship.q,
+        length: this.sample.length,
+        sunDir,
+        daylight,
+        thrust: this.rt.thrustLevel,
+        boost: telemetry.fx.speed,
+        visible: st.phase !== "flying" || st.cameraMode !== "cockpit",
+        time: performance.now() / 1000,
+      },
+      {
+        frame: {
+          catalog: this.orbits,
+          camPos: p.pos,
+          camDir: p.dir,
+          camUp: p.up,
+          fovY: p.fov,
+          shipPos: this.ship.pos,
+          sunDir,
+          opacity: satOpacity,
+        },
+        tel: telemetry,
+      },
+    );
 
     // sun glare (screen-space for the HUD)
     const right = norm([p.dir[1] * p.up[2] - p.dir[2] * p.up[1], p.dir[2] * p.up[0] - p.dir[0] * p.up[2], p.dir[0] * p.up[1] - p.dir[1] * p.up[0]]);
@@ -911,6 +958,7 @@ export class Simulator {
       this.scene?.postRender.removeEventListener(this.onPostRender);
     } catch { /* scene already destroyed */ }
     this.buildings?.dispose();
+    this.live?.dispose();
     this.markers?.dispose();
     this.shipRenderer?.dispose();
     try {

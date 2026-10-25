@@ -11,7 +11,7 @@ export interface InputHandlers {
 }
 
 const GAME_KEYS = new Set([
-  "KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "KeyC", "KeyF", "KeyR", "KeyX", "KeyT", "KeyG", "KeyH", "KeyM",
+  "KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "KeyC", "KeyF", "KeyR", "KeyX", "KeyT", "KeyG", "KeyL", "KeyH", "KeyM",
   "Space", "ShiftLeft", "ShiftRight", "Tab", "Backspace", "BracketLeft", "BracketRight", "Digit0", "Digit1", "Digit2", "Digit3", "KeyV",
 ]);
 

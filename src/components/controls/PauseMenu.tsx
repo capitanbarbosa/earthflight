@@ -65,8 +65,9 @@ export function PauseMenu() {
               <Seg label="Adaptive" value={s.adaptiveQuality ? "on" : "off"} onChange={(v) => s.set({ adaptiveQuality: v === "on" })} options={[["on", "On"], ["off", "Off"]]} />
               <Seg label="Effects" value={s.effects ? "on" : "off"} onChange={(v) => s.set({ effects: v === "on" })} options={[["on", "On"], ["off", "Off"]]} />
               <Seg label="Sun" value={s.sunMode} onChange={(sunMode) => s.set({ sunMode })} options={[["day", "Daylight"], ["live", "Live"], ["night", "Night"]]} />
+              <Seg label="Satellites" value={s.satellites ? "on" : "off"} onChange={(v) => s.set({ satellites: v === "on" })} options={[["on", "On"], ["off", "Off"]]} />
               <p className="mt-1 text-[10px] leading-relaxed text-cyan-200/45">
-                Adaptive lowers render resolution if the frame rate drops. High enables MSAA, bloom, motion blur and shadows near the ground.
+                Adaptive lowers render resolution if the frame rate drops. High enables MSAA, bloom, motion blur and shadows near the ground. Satellites are real objects (CelesTrak orbit data) shown near the ship in space; their size on screen is exaggerated.
               </p>
             </div>
             <div>

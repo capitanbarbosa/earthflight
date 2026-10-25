@@ -1,11 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect } from "react";
 import { useFlightStore } from "@/stores/flight-store";
 import { IntroOverlay } from "@/components/controls/IntroOverlay";
 import { PauseMenu } from "@/components/controls/PauseMenu";
 import { DestinationPanel } from "@/components/destinations/DestinationPanel";
+import { LayersPanel } from "@/components/layers/LayersPanel";
 import { Hud } from "@/components/hud/Hud";
 import { FxLayer } from "@/components/hud/FxLayer";
 import { getDestination } from "@/lib/geospatial/destinations";
@@ -48,9 +50,17 @@ export default function EarthflightApp({ variant = "explore", initialDestination
       <GlobeScene />
       <FxLayer />
       {phase !== "flying" && <IntroOverlay headline={variant === "home"} />}
+      {phase !== "flying" && variant === "home" && (
+        <nav aria-label="Main" className="absolute inset-x-0 top-0 z-30 flex items-center justify-end gap-2 p-3 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan-100/80 sm:gap-4 sm:p-4">
+          <Link href="/how-to-play" className="hidden px-2 py-1 hover:text-white sm:inline">How to play</Link>
+          <Link href="/destinations" className="hidden px-2 py-1 hover:text-white sm:inline">Destinations</Link>
+          <Link href="/explore" className="hud-btn !py-1.5">Explore</Link>
+        </nav>
+      )}
       {flying && <Hud />}
       {flying && paused && panel === "none" && <PauseMenu />}
       {flying && panel === "destinations" && <DestinationPanel />}
+      {flying && panel === "layers" && <LayersPanel />}
     </div>
   );
 }

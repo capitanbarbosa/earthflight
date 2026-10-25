@@ -4,7 +4,7 @@ import type { FlightAssist, FlightModeId, ModeSelection } from "@/engine/physics
 
 export type Phase = "loading" | "intro" | "flying";
 export type Quality = "low" | "medium" | "high";
-export type Panel = "none" | "destinations" | "settings";
+export type Panel = "none" | "destinations" | "settings" | "layers";
 
 export interface DestinationTarget {
   id: string;
@@ -45,6 +45,8 @@ interface FlightState {
   quality: Quality;
   adaptiveQuality: boolean;
   effects: boolean;
+  /** Show real satellites (CelesTrak) around the ship while in space. */
+  satellites: boolean;
   sunMode: "day" | "live" | "night";
 
   muted: boolean;
@@ -81,6 +83,7 @@ export const useFlightStore = create<FlightState>((set, get) => ({
   quality: "medium",
   adaptiveQuality: true,
   effects: true,
+  satellites: true,
   sunMode: "day",
 
   muted: false,

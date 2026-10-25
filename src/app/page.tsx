@@ -67,6 +67,9 @@ export default function Home() {
               Satellite imagery, global terrain and OpenStreetMap buildings are streamed on demand, so the world you explore is the real one:
               the Alps, the Himalayas, the Manhattan skyline, the canals of Cartagena.
             </p>
+            <p>
+              <Link href="/explore" className="start-btn inline-block text-sm no-underline">EXPLORE NOW</Link>
+            </p>
           </section>
 
           <section className="mt-12 grid gap-4 sm:grid-cols-3" aria-label="Features">
