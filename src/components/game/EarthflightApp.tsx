@@ -6,6 +6,8 @@ import { useEffect } from "react";
 import { useFlightStore } from "@/stores/flight-store";
 import { IntroOverlay } from "@/components/controls/IntroOverlay";
 import { PauseMenu } from "@/components/controls/PauseMenu";
+import { TouchControls } from "@/components/controls/TouchControls";
+import { detectDevice } from "@/lib/device";
 import { DestinationPanel } from "@/components/destinations/DestinationPanel";
 import { LayersPanel } from "@/components/layers/LayersPanel";
 import { Hud } from "@/components/hud/Hud";
@@ -28,7 +30,51 @@ export default function EarthflightApp({ variant = "explore", initialDestination
   const phase = useFlightStore((s) => s.phase);
   const paused = useFlightStore((s) => s.paused);
   const panel = useFlightStore((s) => s.panel);
+  const touchFlight = useFlightStore((s) => s.inputMode === "touch");
   const flying = phase === "flying";
+
+  useEffect(() => {
+    const apply = () => {
+      const profile = detectDevice();
+      const prev = useFlightStore.getState();
+      useFlightStore.getState().set({
+        deviceReady: true,
+        deviceKind: profile.kind,
+        formFactor: profile.formFactor,
+        inputMode: profile.touchFlight ? "touch" : "keyboard",
+        showControls: profile.touchFlight && prev.inputMode !== "touch" ? false : prev.showControls,
+      });
+      const root = document.documentElement;
+      root.classList.toggle("touch-flight", profile.touchFlight);
+      root.classList.toggle("form-phone", profile.formFactor === "phone");
+      root.classList.toggle("form-tablet", profile.formFactor === "tablet");
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    window.addEventListener("orientationchange", apply);
+    const coarse = window.matchMedia("(pointer: coarse)");
+    const narrow = window.matchMedia("(max-width: 700px)");
+    coarse.addEventListener?.("change", apply);
+    narrow.addEventListener?.("change", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      window.removeEventListener("orientationchange", apply);
+      coarse.removeEventListener?.("change", apply);
+      narrow.removeEventListener?.("change", apply);
+      document.documentElement.classList.remove("touch-flight", "form-phone", "form-tablet");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!flying) return;
+    const block = (e: Event) => e.preventDefault();
+    document.addEventListener("gesturestart", block);
+    document.addEventListener("gesturechange", block);
+    return () => {
+      document.removeEventListener("gesturestart", block);
+      document.removeEventListener("gesturechange", block);
+    };
+  }, [flying]);
 
   // /explore?dest=tokyo → after START, cinematically fly there once the intro has settled.
   useEffect(() => {
@@ -58,6 +104,7 @@ export default function EarthflightApp({ variant = "explore", initialDestination
         </nav>
       )}
       {flying && <Hud />}
+      {flying && touchFlight && !paused && panel === "none" && <TouchControls />}
       {flying && paused && panel === "none" && <PauseMenu />}
       {flying && panel === "destinations" && <DestinationPanel />}
       {flying && panel === "layers" && <LayersPanel />}

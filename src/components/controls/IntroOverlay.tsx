@@ -8,6 +8,17 @@ export function IntroOverlay({ headline }: { headline?: boolean }) {
   const phase = useFlightStore((s) => s.phase);
   const ready = useFlightStore((s) => s.ready);
   const error = useFlightStore((s) => s.error);
+  const deviceReady = useFlightStore((s) => s.deviceReady);
+  const deviceKind = useFlightStore((s) => s.deviceKind);
+  const hint = !deviceReady
+    ? "Sound starts when you press start"
+    : deviceKind === "iphone"
+      ? "iPhone controls ready · left stick flies, right stick aims"
+      : deviceKind === "ipad"
+        ? "iPad controls ready · left stick flies, right stick aims"
+        : deviceKind === "phone" || deviceKind === "tablet"
+          ? "Touch controls ready · left stick flies, right stick aims"
+          : "WASD + mouse · sound starts on click";
   const fading = phase === "flying";
   if (fading) return null;
   return (
@@ -34,8 +45,8 @@ export function IntroOverlay({ headline }: { headline?: boolean }) {
             >
               {ready ? "START EXPLORING" : "CALIBRATING ORBIT…"}
             </button>
-            <p className="font-mono text-[11px] tracking-[0.2em] text-cyan-100/60">
-              {ready ? "WASD + mouse · desktop browser recommended · sound starts on click" : "Streaming Earth imagery and terrain"}
+            <p className="max-w-[92vw] font-mono text-[11px] tracking-[0.14em] text-cyan-100/60 sm:tracking-[0.2em]">
+              {ready ? hint : "Streaming Earth imagery and terrain"}
             </p>
           </>
         )}

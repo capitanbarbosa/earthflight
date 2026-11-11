@@ -35,6 +35,9 @@ export interface ControlInput {
   roll: number; // -1..1  (E right, Q left)
   mouseDX: number; // accumulated px since last frame
   mouseDY: number;
+  /** Virtual look stick, -1..1. Positive lookX matches mouse-right; positive lookY pitches the nose up. */
+  lookX?: number;
+  lookY?: number;
 }
 
 export interface GroundProbe {
@@ -258,15 +261,19 @@ export function stepFlight(
   const sens = 0.0022 * cfg.sensitivity;
   const maxTurn = mode.maxTurn;
   const yInv = cfg.invertY ? -1 : 1;
-  const wantPitch = clamp((-input.mouseDY * yInv * sens) / dt, -maxTurn, maxTurn);
-  const wantYaw = clamp((-input.mouseDX * sens) / dt, -maxTurn, maxTurn);
+  const lookX = input.lookX ?? 0;
+  const lookY = input.lookY ?? 0;
+  // Full stick ≈ a hard mouse turn. The look-sensitivity slider scales it, then the mode caps it.
+  const stickScale = Math.min(0.95, 0.92 * cfg.sensitivity);
+  const wantPitch = clamp((-input.mouseDY * yInv * sens) / dt + lookY * yInv * maxTurn * stickScale, -maxTurn, maxTurn);
+  const wantYaw = clamp((-input.mouseDX * sens) / dt - lookX * maxTurn * stickScale, -maxTurn, maxTurn);
   const rollRate = 105 * DEG;
   const wantRoll = input.roll * rollRate;
   const kIn = arcade ? 14 : 7;
   const kOut = arcade ? 9 : 1.4;
   const w = s.angVel;
-  const hasP = Math.abs(input.mouseDY) > 0;
-  const hasY = Math.abs(input.mouseDX) > 0;
+  const hasP = Math.abs(input.mouseDY) > 0 || Math.abs(lookY) > 0.02;
+  const hasY = Math.abs(input.mouseDX) > 0 || Math.abs(lookX) > 0.02;
   const hasR = Math.abs(input.roll) > 0;
   w[0] += ((hasP ? wantPitch : 0) - w[0]) * damp(hasP ? kIn : kOut, dt);
   w[1] += ((hasY ? wantYaw : 0) - w[1]) * damp(hasY ? kIn : kOut, dt);

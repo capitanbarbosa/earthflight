@@ -1,4 +1,6 @@
 import type { ControlInput } from "@/engine/physics";
+import { getFlightState } from "@/stores/flight-store";
+import { touchInput } from "@/lib/touch-input";
 
 export interface InputHandlers {
   onKeyDown(code: string, e: KeyboardEvent): void;
@@ -66,10 +68,12 @@ export class InputManager {
       this.dragging = false;
     });
     onEl("pointerdown", (e) => {
-      if (e.button !== 0 && e.button !== 2) return;
       if (!this.h.isCapturing()) return;
+      // Fingers fly with the on-screen sticks. A mouse on an iPad can still click-drag.
+      if (e.pointerType === "touch" || e.pointerType === "pen") return;
+      if (e.button !== 0 && e.button !== 2) return;
       if (!this.locked) this.dragging = true;
-      this.h.onViewportPointerDown(e);
+      if (getFlightState().inputMode !== "touch") this.h.onViewportPointerDown(e);
     });
     onEl("wheel", (e) => {
       if (!this.h.isCapturing()) return;
@@ -107,18 +111,21 @@ export class InputManager {
     this.keys.clear();
   }
 
-  /** Read & consume this frame's controls. */
+  /** Read & consume this frame's controls. Keyboard and the touch sticks add together. */
   read(): ControlInput {
     const k = this.keys;
     const axis = (pos: string[], neg: string[]) =>
       (pos.some((c) => k.has(c)) ? 1 : 0) - (neg.some((c) => k.has(c)) ? 1 : 0);
+    const mix = (key: number, touch: number) => clampAxis(key + (touchInput.enabled ? touch : 0));
     const out: ControlInput = {
-      thrust: axis(["KeyW"], ["KeyS"]),
-      strafe: axis(["KeyD"], ["KeyA"]),
-      vertical: axis(["Space"], ["ShiftLeft", "ShiftRight"]),
-      roll: axis(["KeyE"], ["KeyQ"]),
+      thrust: mix(axis(["KeyW"], ["KeyS"]), touchInput.thrust),
+      strafe: mix(axis(["KeyD"], ["KeyA"]), touchInput.strafe),
+      vertical: mix(axis(["Space"], ["ShiftLeft", "ShiftRight"]), touchInput.vertical),
+      roll: mix(axis(["KeyE"], ["KeyQ"]), touchInput.roll),
       mouseDX: this.dx,
       mouseDY: this.dy,
+      lookX: touchInput.enabled ? touchInput.lookX : 0,
+      lookY: touchInput.enabled ? touchInput.lookY : 0,
     };
     this.dx = 0;
     this.dy = 0;
@@ -136,6 +143,10 @@ export class InputManager {
     this.cleanup.forEach((f) => f());
     this.cleanup = [];
   }
+}
+
+function clampAxis(v: number) {
+  return Math.max(-1, Math.min(1, v));
 }
 
 function isTyping(t: EventTarget | null) {

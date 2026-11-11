@@ -207,6 +207,7 @@ export class Simulator {
       onLockChange: (locked) => this.onLockChange(locked),
       onViewportPointerDown: () => {
         const s = getFlightState();
+        if (s.inputMode === "touch") return;
         if (s.phase === "flying" && !s.paused && s.panel === "none" && !this.input.locked) this.input.requestLock();
       },
     });
@@ -289,21 +290,47 @@ export class Simulator {
     this.rig.easeScale = 0.18;
     this.rt.mode = "space";
     useFlightStore.getState().set({ phase: "flying", paused: false, cameraMode: "chase", panel: "none" });
-    this.input.requestLock();
-    useFlightStore.getState().toast("Mouse to steer · W/S thrust · Space/Shift ascend/descend · G destinations");
+    this.capturePointer();
+    useFlightStore.getState().toast(
+      getFlightState().inputMode === "touch"
+        ? "Left stick flies · right stick aims · hold climb and dive"
+        : "Mouse to steer · W/S thrust · Space/Shift ascend/descend · G destinations",
+    );
   }
 
   resume() {
     useFlightStore.getState().set({ paused: false, panel: "none" });
     this.suppressPause = false;
-    this.input.requestLock();
+    this.capturePointer();
+  }
+
+  /** Chase → cockpit → free orbit. */
+  cycleCamera() {
+    const s = getFlightState();
+    if (s.phase !== "flying" || s.paused || s.panel !== "none") return;
+    const order = ["chase", "cockpit", "free"] as const;
+    const idx = order.indexOf(s.cameraMode as (typeof order)[number]);
+    const next = order[(idx < 0 ? 0 : idx + 1) % order.length];
+    useFlightStore.getState().set({ cameraMode: next });
+    useFlightStore.getState().toast(
+      next === "chase" ? "Camera: third-person chase" : next === "cockpit" ? "Camera: first-person cockpit" : "Camera: free orbit — right stick looks around, + and − zoom",
+    );
+    this.audio?.ui("click");
+  }
+
+  /** Speed limiter, or zoom while the free camera is active. `dir` +1 is faster / closer. */
+  adjustLimiter(dir: 1 | -1) {
+    const s = getFlightState();
+    if (s.phase !== "flying" || s.paused || s.panel !== "none") return;
+    if (s.cameraMode === "free") this.rig.zoom(-dir * 90);
+    else useFlightStore.getState().set({ speedScale: clamp(s.speedScale * Math.pow(1.25, dir), 0.02, 1) });
   }
 
   openPanel(p: "destinations" | "settings" | "layers" | "none") {
     useFlightStore.getState().set({ panel: p });
     if (p === "none") {
       this.suppressPause = false;
-      if (getFlightState().phase === "flying" && !getFlightState().paused) this.input.requestLock();
+      if (getFlightState().phase === "flying" && !getFlightState().paused) this.capturePointer();
     }
   }
 
@@ -343,7 +370,7 @@ export class Simulator {
     useFlightStore.getState().set({ travelling: true, destination: d, panel: "none", paused: false });
     this.suppressPause = false;
     this.audio?.ui("select");
-    this.input.requestLock();
+    this.capturePointer();
     useFlightStore.getState().toast(`Setting course for ${target.name}`);
   }
 
@@ -443,6 +470,11 @@ export class Simulator {
     e.stopPropagation?.();
   }
 
+  private capturePointer() {
+    if (getFlightState().inputMode === "touch") return;
+    this.input.requestLock();
+  }
+
   private onWheel(dy: number) {
     const s = getFlightState();
     if (s.cameraMode === "free") this.rig.zoom(dy);
@@ -451,6 +483,10 @@ export class Simulator {
 
   private onLockChange(locked: boolean) {
     const s = useFlightStore.getState();
+    if (s.inputMode === "touch") {
+      if (locked) this.input.exitLock();
+      return;
+    }
     s.set({ pointerLocked: locked });
     if (!locked && s.phase === "flying" && s.panel === "none" && !this.suppressPause && !s.paused) {
       s.set({ paused: true });
@@ -603,8 +639,9 @@ export class Simulator {
       const moveKeys = controls.thrust !== 0 || controls.strafe !== 0 || controls.vertical !== 0;
       if (this.ap.active && moveKeys) this.cancelTravel();
       if (st.cameraMode === "free") {
-        this.rig.orbit(controls.mouseDX, controls.mouseDY);
-        controls = { ...controls, mouseDX: 0, mouseDY: 0 };
+        const nudge = 7 * (dt * 60);
+        this.rig.orbit(controls.mouseDX + (controls.lookX ?? 0) * nudge, controls.mouseDY - (controls.lookY ?? 0) * nudge);
+        controls = { ...controls, mouseDX: 0, mouseDY: 0, lookX: 0, lookY: 0 };
       }
       if (this.ap.active) {
         this.ap.step(this.ship, dt);

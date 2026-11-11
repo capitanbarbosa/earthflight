@@ -29,3 +29,20 @@ export const CONTROLS: ControlRow[] = [
   { keys: ["H"], action: "Show / hide this guide", group: "Systems" },
   { keys: ["Esc"], action: "Pause / release mouse", group: "Systems" },
 ];
+
+export interface TouchControlRow {
+  control: string;
+  action: string;
+  detail?: string;
+}
+
+export const TOUCH_CONTROLS: TouchControlRow[] = [
+  { control: "Left stick", action: "Fly", detail: "Push up to thrust forward, down to brake, and sideways to strafe." },
+  { control: "Right stick", action: "Aim", detail: "Pitch and yaw. In the free camera it orbits the ship." },
+  { control: "Climb / Dive", action: "Ascend and descend", detail: "Same as Space and Shift. Terrain protection still applies." },
+  { control: "Roll", action: "Roll left and right", detail: "Same as Q and E." },
+  { control: "− / +", action: "Speed limiter", detail: "In the free camera these zoom instead." },
+  { control: "Cam", action: "Cycle the camera", detail: "Chase, cockpit, then free orbit." },
+  { control: "Stop", action: "Emergency stop", detail: "Kills velocity and holds position until you thrust again." },
+  { control: "Keyboard", action: "Still works on iPad", detail: "A hardware keyboard keeps the desktop keys, including G for destinations and Esc to pause." },
+];

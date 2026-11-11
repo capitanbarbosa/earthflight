@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentPage } from "@/components/site/ContentPage";
-import { CONTROLS } from "@/lib/controls-data";
+import { CONTROLS, TOUCH_CONTROLS } from "@/lib/controls-data";
 
 export const metadata: Metadata = {
   title: "Controls — Keyboard and Mouse Reference",
@@ -16,8 +16,9 @@ export default function Page() {
     <ContentPage>
       <h1>Controls</h1>
       <p>
-        EARTHFLIGHT is played with keyboard and mouse. Click the view to capture the mouse; press <kbd>Esc</kbd> to release it and pause. A compact
-        reminder is always available in-game with <kbd>H</kbd>. New here? Read <Link href="/how-to-play">how to play</Link> first.
+        On a computer, EARTHFLIGHT is played with keyboard and mouse. Click the view to capture the mouse; press <kbd>Esc</kbd> to release it and pause. On an
+        iPhone, iPad or other phone or tablet, on-screen sticks appear instead and the mouse is left unlocked. A compact reminder is available in-game with <kbd>H</kbd>,
+        or the Help button. New here? Read <Link href="/how-to-play">how to play</Link> first.
       </p>
       {groups.map((g) => (
         <section key={g}>
@@ -55,8 +56,34 @@ export default function Page() {
         If your browser blocks pointer lock (some embedded browsers do), hold the left mouse button and drag instead. Use <em>Invert Y</em> and the mouse
         sensitivity slider in the pause menu to tune the feel.
       </p>
-      <h2>Touch devices</h2>
-      <p>EARTHFLIGHT currently needs a keyboard and mouse. Touch controls are not implemented.</p>
+      <h2>Phone and tablet</h2>
+      <p>
+        iPhone, iPad and other touch devices are detected automatically, including iPadOS when it reports itself as a desktop Mac. The left stick thrusts and
+        strafes, the right stick pitches and yaws, and the buttons beside them climb, dive, roll, change camera, set the speed limiter and stop. Push the move
+        stick to cancel cinematic travel. A paired keyboard still uses the keys above. Pointer lock stays off, so leaving the view does not pause the flight;
+        use the Pause button.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Control</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {TOUCH_CONTROLS.map((c) => (
+            <tr key={c.control}>
+              <td className="whitespace-nowrap">
+                <kbd>{c.control}</kbd>
+              </td>
+              <td>
+                <strong className="text-cyan-100">{c.action}</strong>
+                {c.detail && <span className="block text-sm opacity-75">{c.detail}</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </ContentPage>
   );
 }

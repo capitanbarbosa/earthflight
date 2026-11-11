@@ -119,6 +119,26 @@ describe("flight model", () => {
     expect(sample.speed).toBeLessThan(150);
   });
 
+  it("look stick yaws and pitches in the same direction as the mouse", () => {
+    const probe = flat(0);
+    const run = (input: Partial<ControlInput>) => {
+      const s = createShip(0, 0, 400_000, 0);
+      const rt = createRuntime();
+      let sample = sampleShip(s, rt);
+      for (let i = 0; i < 40; i++) sample = stepFlight(s, rt, { ...none, ...input }, cfg, 1 / 60, probe);
+      return sample;
+    };
+    const wrap = (deg: number) => ((deg + 540) % 360) - 180;
+    const mouse = run({ mouseDX: 30 });
+    const stick = run({ lookX: 1 });
+    expect(Math.sign(wrap(mouse.heading))).toBe(Math.sign(wrap(stick.heading)));
+    expect(Math.abs(wrap(stick.heading))).toBeGreaterThan(8);
+    const mousePitch = run({ mouseDY: -30 }).pitch;
+    const stickPitch = run({ lookY: 1 }).pitch;
+    expect(Math.sign(mousePitch)).toBe(Math.sign(stickPitch));
+    expect(Math.abs(stickPitch)).toBeGreaterThan(2);
+  });
+
   it("emergency stop zeroes velocity and holds until input", () => {
     const s = createShip(0, 0, 3000, 0);
     const rt = createRuntime();

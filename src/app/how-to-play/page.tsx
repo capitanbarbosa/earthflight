@@ -56,6 +56,11 @@ export default function Page() {
         Press F to switch. <strong>Arcade</strong> keeps the ship aligned with its direction of travel and levels it automatically — recommended for first flights.
         <strong> Realistic</strong> is Newtonian: the ship keeps its momentum and does not auto-level, so you must brake and align yourself.
       </p>
+      <h2>Phones and tablets</h2>
+      <p>
+        Open the site on an iPhone, iPad or other phone or tablet and the controls switch on their own. The left stick flies the ship, the right stick aims it,
+        and the buttons climb, dive and roll. Pause, destinations and live layers stay along the top. A keyboard attached to an iPad keeps working too.
+      </p>
       <h2>Tips</h2>
       <ul>
         <li>Lower the speed limiter with the mouse wheel or the [ and ] keys when flying between buildings.</li>

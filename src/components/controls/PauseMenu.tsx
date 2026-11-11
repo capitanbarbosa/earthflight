@@ -76,7 +76,7 @@ export function PauseMenu() {
               <Seg label="Mode" value={s.modeSelection} onChange={(modeSelection) => s.set({ modeSelection })} options={[["auto", "Auto"], ["space", "Space"], ["atmosphere", "Atmos"], ["city", "City"]]} />
               <Seg label="Camera" value={s.cameraMode} onChange={(cameraMode) => s.set({ cameraMode })} options={[["chase", "Chase"], ["cockpit", "Cockpit"], ["free", "Free"]]} />
               <Range label="Speed limit" value={s.speedScale} min={0.02} max={1} step={0.01} onChange={(speedScale) => s.set({ speedScale })} fmt={(v) => `${Math.round(v * 100)}%`} />
-              <Range label="Mouse" value={s.sensitivity} min={0.25} max={3} step={0.05} onChange={(sensitivity) => s.set({ sensitivity })} fmt={(v) => `${v.toFixed(1)}×`} />
+              <Range label={s.inputMode === "touch" ? "Look" : "Mouse"} value={s.sensitivity} min={0.25} max={3} step={0.05} onChange={(sensitivity) => s.set({ sensitivity })} fmt={(v) => `${v.toFixed(1)}×`} />
               <Seg label="Invert Y" value={s.invertY ? "on" : "off"} onChange={(v) => s.set({ invertY: v === "on" })} options={[["off", "Off"], ["on", "On"]]} />
             </div>
             <div className="sm:col-span-2">

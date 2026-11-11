@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { CameraMode } from "@/engine/camera";
 import type { FlightAssist, FlightModeId, ModeSelection } from "@/engine/physics";
+import type { DeviceKind, FormFactor } from "@/lib/device";
 
 export type Phase = "loading" | "intro" | "flying";
 export type Quality = "low" | "medium" | "high";
@@ -33,6 +34,11 @@ interface FlightState {
   pointerLocked: boolean;
   panel: Panel;
   showControls: boolean;
+  /** Set on the client once the phone / tablet / desktop check has run. */
+  deviceReady: boolean;
+  deviceKind: DeviceKind;
+  formFactor: FormFactor;
+  inputMode: "keyboard" | "touch";
 
   cameraMode: CameraMode; // chase | cockpit | free
   assist: FlightAssist;
@@ -71,6 +77,10 @@ export const useFlightStore = create<FlightState>((set, get) => ({
   pointerLocked: false,
   panel: "none",
   showControls: true,
+  deviceReady: false,
+  deviceKind: "desktop",
+  formFactor: "desktop",
+  inputMode: "keyboard",
 
   cameraMode: "chase",
   assist: "arcade",

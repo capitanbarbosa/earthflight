@@ -37,7 +37,7 @@ export default function Page() {
         <a href="https://policies.google.com/technologies/ads" rel="noopener">how Google uses data from partner sites</a>.
       </p>
       <h2>Audio and input</h2>
-      <p>The simulator uses your keyboard and mouse (including pointer lock). It never accesses your microphone or camera. Sound only starts after you press Start.</p>
+      <p>The simulator uses your keyboard and mouse on a computer, including pointer lock, and on-screen sticks on a phone or tablet. It never accesses your microphone or camera. Sound only starts after you press Start.</p>
       <h2>Your rights</h2>
       <p>Depending on where you live you may have rights to access, correct or delete personal data. Contact us at <a href={`mailto:${config.contactEmail}`}>{config.contactEmail}</a>.</p>
     </ContentPage>

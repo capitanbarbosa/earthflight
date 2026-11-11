@@ -26,6 +26,8 @@ export function Hud() {
   const showControls = useFlightStore((s) => s.showControls);
   const set = useFlightStore((s) => s.set);
   const travelling = useFlightStore((s) => s.travelling);
+  const touch = useFlightStore((s) => s.inputMode === "touch");
+  const phone = useFlightStore((s) => s.formFactor === "phone");
 
   const r = useTelemetry((t) => {
     const sp = fmtSpeed(t.speed);
@@ -52,7 +54,48 @@ export function Hud() {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10 select-none font-mono">
-      {/* top bar */}
+      {touch ? (
+        <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center gap-1 px-2 pt-[max(0.45rem,env(safe-area-inset-top))]">
+          <div className="flex w-full items-start justify-between gap-2">
+            <div className="hud-panel pointer-events-auto flex shrink-0 items-center px-2.5 py-2">
+              <span className={`font-bold text-cyan-200 ${phone ? "text-[10px] tracking-[0.18em]" : "text-[12px] tracking-[0.28em]"}`}>EARTHFLIGHT</span>
+            </div>
+            <div className="pointer-events-auto flex flex-wrap justify-end gap-1.5">
+              <button className="hud-btn !px-2 !py-2 !text-[10px] !tracking-[0.12em]" onClick={() => sim()?.openPanel("destinations")}>
+                Dest
+              </button>
+              <button className="hud-btn !px-2 !py-2 !text-[10px] !tracking-[0.12em]" onClick={() => sim()?.openPanel("layers")}>
+                Live
+              </button>
+              <button className="hud-btn !px-2 !py-2 !text-[10px] !tracking-[0.12em]" onClick={() => set({ muted: !muted })}>
+                {muted ? "Muted" : "Sound"}
+              </button>
+              <button className="hud-btn !px-2 !py-2 !text-[10px] !tracking-[0.12em]" onClick={() => set({ showControls: !showControls })}>
+                Help
+              </button>
+              <button className="hud-btn !px-2 !py-2 !text-[10px] !tracking-[0.12em]" onClick={() => set({ paused: true })}>
+                Pause
+              </button>
+            </div>
+          </div>
+          <Compass />
+          <span className="hud-label" style={{ color: mcolor }}>
+            {MODES[activeMode].label}
+            {modeSelection !== "auto" ? " · LOCKED" : " · AUTO"}
+          </span>
+          <div className="touch-readout hud-panel flex max-w-[96vw] flex-wrap items-center justify-center gap-x-2 px-3 py-1 text-[11px] text-cyan-100">
+            <span><span className="hud-value">{r.speed}</span> {r.speedUnit}</span>
+            <span className="text-cyan-400/35">·</span>
+            <span><span className="hud-value">{r.alt}</span> {r.altUnit}</span>
+            <span className="text-cyan-400/35">·</span>
+            <span>AGL <span className="hud-value">{r.agl}</span> {r.aglUnit}</span>
+            <span className="text-cyan-400/35">·</span>
+            <span className="hud-value">{String(r.hdg).padStart(3, "0")}°</span>
+            <span className="text-cyan-400/35">·</span>
+            <span>{Math.round(speedScale * 100)}%</span>
+          </div>
+        </div>
+      ) : (
       <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3 sm:p-4">
         <div className="hud-panel pointer-events-auto flex items-center gap-3 px-3 py-2">
           <span className="text-[13px] font-bold tracking-[0.35em] text-cyan-200">EARTHFLIGHT</span>
@@ -84,6 +127,7 @@ export function Hud() {
           </button>
         </div>
       </div>
+      )}
 
       {/* crosshair */}
       <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-80" width="64" height="64" viewBox="-32 -32 64 64" aria-hidden>
@@ -98,6 +142,7 @@ export function Hud() {
       <SatLabels />
 
       {/* bottom-left: flight data */}
+      {!touch && (
       <div className="absolute bottom-7 left-3 sm:left-4">
         <div className="hud-panel pointer-events-none min-w-[250px] px-4 py-3">
           <div className="hud-label">Speed</div>
@@ -143,8 +188,10 @@ export function Hud() {
           </div>
         </div>
       </div>
+      )}
 
       {/* bottom-right: position */}
+      {!touch && (
       <div className="absolute bottom-7 right-3 sm:right-4">
         <div className="hud-panel pointer-events-none min-w-[250px] px-4 py-3 text-right">
           <div className="hud-label">Position</div>
@@ -170,13 +217,14 @@ export function Hud() {
           </div>
         </div>
       </div>
+      )}
 
       {/* bottom center: travel progress */}
       {travelling && <TravelBar />}
 
       {/* controls guide */}
       {showControls && !paused && panel === "none" && (
-        <div className="pointer-events-auto absolute left-3 top-16 max-h-[calc(100dvh-7rem)] origin-top-left overflow-y-auto sm:left-4 [@media(max-height:640px)]:scale-[0.8]">
+        <div className={`pointer-events-auto absolute left-[max(0.75rem,env(safe-area-inset-left))] origin-top-left overflow-y-auto sm:left-4 ${touch ? "top-[max(10.5rem,calc(env(safe-area-inset-top)+9rem))] max-h-[34dvh]" : "top-16 max-h-[calc(100dvh-7rem)] [@media(max-height:640px)]:scale-[0.8]"}`}>
           <ControlsGuide compact onClose={() => set({ showControls: false })} />
         </div>
       )}
@@ -188,9 +236,10 @@ export function Hud() {
 }
 
 function TravelBar() {
+  const touch = useFlightStore((s) => s.inputMode === "touch");
   const t = useTelemetry((t) => ({ name: t.travel.name, p: Math.round(t.travel.progress * 100), rem: fmtDist(t.travel.remaining), phase: t.travel.phase }), 120);
   return (
-    <div className="pointer-events-auto absolute bottom-24 left-1/2 w-[min(520px,88vw)] -translate-x-1/2">
+    <div className={`pointer-events-auto absolute left-1/2 w-[min(520px,88vw)] -translate-x-1/2 ${touch ? "bottom-[max(11.5rem,calc(env(safe-area-inset-bottom)+10.5rem))]" : "bottom-24"}`}>
       <div className="hud-panel px-4 py-3">
         <div className="flex items-center justify-between">
           <span className="hud-label">{t.phase === "orient" ? "Aligning with course" : "Cinematic travel"}</span>
@@ -202,7 +251,7 @@ function TravelBar() {
         <div className="mt-2 flex items-center justify-between">
           <span className="hud-value text-xs">{t.rem} remaining</span>
           <button className="hud-btn !py-1" onClick={() => getSimulator()?.cancelTravel()}>
-            Cancel · any thrust key
+            {touch ? "Cancel · move the stick" : "Cancel · any thrust key"}
           </button>
         </div>
       </div>
@@ -212,8 +261,9 @@ function TravelBar() {
 
 function Toasts() {
   const toasts = useFlightStore((s) => s.toasts);
+  const touch = useFlightStore((s) => s.inputMode === "touch");
   return (
-    <div className="absolute bottom-44 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1.5">
+    <div className={`absolute left-1/2 flex -translate-x-1/2 flex-col items-center gap-1.5 ${touch ? "top-[max(11.5rem,calc(env(safe-area-inset-top)+10.5rem))]" : "bottom-44"}`}>
       {toasts.map((t) => (
         <div
           key={t.id}
@@ -227,6 +277,7 @@ function Toasts() {
 }
 
 function AlertFlash() {
+  const touch = useFlightStore((s) => s.inputMode === "touch");
   const ref = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
   useEffect(() => {
@@ -244,7 +295,7 @@ function AlertFlash() {
   return (
     <div
       ref={ref}
-      className="absolute left-1/2 top-24 -translate-x-1/2 border border-amber-400/70 bg-amber-950/60 px-4 py-1.5 text-[12px] tracking-[0.25em] text-amber-200 opacity-0"
+      className={`absolute left-1/2 -translate-x-1/2 border border-amber-400/70 bg-amber-950/60 px-4 py-1.5 text-[12px] tracking-[0.25em] text-amber-200 opacity-0 ${touch ? "top-[max(12.5rem,calc(env(safe-area-inset-top)+11.5rem))]" : "top-24"}`}
     />
   );
 }

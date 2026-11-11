@@ -33,7 +33,7 @@ export default function GlobeScene() {
         const msg = e instanceof Error ? e.message : String(e);
         set({
           error: /webgl/i.test(msg)
-            ? "Your browser could not start WebGL. Enable hardware acceleration or try a recent Chrome, Edge, Firefox or Safari on a desktop."
+            ? "Your browser could not start WebGL. Enable hardware acceleration, or try a recent Safari, Chrome, Edge or Firefox."
             : `Failed to start the 3D engine: ${msg}`,
         });
       }
